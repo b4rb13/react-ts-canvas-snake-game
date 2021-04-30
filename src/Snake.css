@@ -1,0 +1,19 @@
+body, html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: center;
+  align-items: center;
+}
+
+.scoreboard {
+  margin-left: 20px;
+  font-size: 30px;
+  min-width: 200px;
+}
