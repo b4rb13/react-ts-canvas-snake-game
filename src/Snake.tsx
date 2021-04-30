@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { PureComponent } from 'react';
 
 import './Snake.css';
 
@@ -18,13 +18,13 @@ interface ISnakeProps {
   cellSize: number,
 }
 
-// interface ISnakeState {
-//   snakeSize: number,
-//   snakeCoordinates: Array<ICell>,
-//   direction: Direction,
-//   foodCoordinates: ICell,
-//   score: number,
-// }
+interface ISnakeState {
+  snakeSize: number,
+  snakeCoordinates: Array<ICell>,
+  direction: Direction,
+  foodCoordinates: ICell,
+  score: number,
+}
 
 const GRAY_COLOR = '#949494';
 const WHITE_COLOR = '#ffffff';
@@ -61,10 +61,10 @@ const isSameCoordinates = (a: ICell, b: ICell): boolean => a.x === b.x && a.y ==
  */
 
 const getComputedNextHeadCoordinates = (
-  headCoordinates: ICell,
-  direction: Direction,
-  canvasSize: number,
-  cellSize: number
+    headCoordinates: ICell,
+    direction: Direction,
+    canvasSize: number,
+    cellSize: number
 ): ICell | null => {
   if (headCoordinates) {
     let { x, y } = headCoordinates;
@@ -108,32 +108,31 @@ const getComputedNextHeadCoordinates = (
   return null;
 };
 
-const Snake = ({cellSize}: ISnakeProps) => {
+class Snake extends PureComponent<ISnakeProps, ISnakeState> {
 
-  const canvas = React.createRef() as React.RefObject<HTMLCanvasElement>;
-  let timerId: any;
-  const [direction, setDirection] = useState<Direction>(Direction.Right);
-  const [snakeSize, setSnakeSize] = useState<number>(INITIAL_SNAKE_SIZE);
-  const [snakeCoordinates, setSnakeCoordinates] = useState<ICell[]>([]);
-  const [foodCoordinates, setFoodCoordinates] = useState<ICell>({x: -100, y: -100});
-  const [score, setScore] = useState<number>(0);
+  canvas = React.createRef() as React.RefObject<HTMLCanvasElement>;
+  timerId: any;
 
+  state = {
+    direction: Direction.Right,
+    snakeSize: INITIAL_SNAKE_SIZE,
+    snakeCoordinates: [],
+    foodCoordinates: {
+      x: -100,
+      y: -100,
+    },
+    score: 0,
+  };
 
-  useEffect(() => {
-    focusCanvas()
-    setCanvasSize()
-    startGame()
-    
-  }, []);
+  public componentDidMount() {
+    this.focusCanvas();
+    this.setCanvasSize();
+    this.startGame();
+  }
 
-  useEffect(() => {
-    renderSnake()
+  public focusCanvas() {
+    const { canvas } = this;
 
-  }, [snakeCoordinates, snakeSize]);
-
-
-  const focusCanvas = () => {
-  
     if (canvas && canvas.current) {
       canvas.current.focus();
     }
@@ -145,7 +144,8 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Gets canvas context.
    */
 
-  const getCanvasContext = (): CanvasRenderingContext2D | null => {
+  public getCanvasContext(): CanvasRenderingContext2D | null {
+    const { canvas } = this;
 
     if (canvas && canvas.current) {
       return canvas.current.getContext('2d');
@@ -159,7 +159,9 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Sets canvas size from cell size (props) and field length (constants).
    */
 
-  const setCanvasSize = (): void  =>{
+  public setCanvasSize(): void {
+    const { canvas } = this;
+    const { cellSize } = this.props;
 
     if (canvas && canvas.current) {
       canvas.current.width = cellSize * FIELD_LENGTH;
@@ -173,7 +175,8 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Gets canvas size (width = height).
    */
 
-  const getCanvasSize = (): number | null => {
+  public getCanvasSize(): number | null {
+    const { canvas } = this;
 
     if (canvas && canvas.current) {
       const { width: canvasSize } = canvas.current.getBoundingClientRect();
@@ -192,8 +195,9 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Gets canvas context and renders rectangle.
    */
 
-  const renderSquare = (x: number, y: number, color: string): void => {
-    const ctx = getCanvasContext();
+  public renderSquare(x: number, y: number, color: string): void {
+    const ctx = this.getCanvasContext();
+    const { cellSize } = this.props;
 
     if (ctx) {
       ctx.fillStyle = color;
@@ -206,9 +210,10 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Gets canvas context, size and renders grid with cell size step.
    */
 
-  const renderGrid = (): void => {
-    const ctx = getCanvasContext();
-    const canvasSize = getCanvasSize();
+  public renderGrid(): void {
+    const ctx = this.getCanvasContext();
+    const canvasSize = this.getCanvasSize();
+    const { cellSize } = this.props;
 
     if (ctx && canvasSize) {
       ctx.fillStyle = GRAY_COLOR;
@@ -235,8 +240,9 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * Renders snake.
    */
 
-  const setInitialSnake = (): void => {
+  public setInitialSnake(): void {
     const snakeSize = INITIAL_SNAKE_SIZE;
+    const { cellSize } = this.props;
     const snakeCoordinates = [];
 
     for (let i = snakeSize; i > 0; i--) {
@@ -245,10 +251,7 @@ const Snake = ({cellSize}: ISnakeProps) => {
       snakeCoordinates.push({ x: part, y: 0 })
     }
 
-    setSnakeCoordinates(snakeCoordinates)
-
-
-    // this.setState({ snakeCoordinates, snakeSize, direction: Direction.Right, score: 0 }, () => this.renderSnake());
+    this.setState({ snakeCoordinates, snakeSize, direction: Direction.Right, score: 0 }, () => this.renderSnake());
   }
 
   /**
@@ -256,11 +259,12 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Gets snake coordinates from state and renders it to canvas. Re-renders grid and food.
    */
 
-  const renderSnake = (): void => {
+  public renderSnake(): void {
+    const { snakeCoordinates } = this.state;
 
-    renderGrid();
-    renderFood();
-    snakeCoordinates.forEach((coordinate: ICell) => renderSquare(coordinate.x, coordinate.y, WHITE_COLOR));
+    this.renderGrid();
+    this.renderFood();
+    snakeCoordinates.forEach((coordinate: ICell) => this.renderSquare(coordinate.x, coordinate.y, WHITE_COLOR));
   }
 
   /**
@@ -269,28 +273,31 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * Renders snake.
    */
 
-  const moveSnake =  (): void => {
+  public moveSnake = (): void => {
+    let { direction, foodCoordinates, snakeCoordinates, snakeSize, score } = this.state;
     let newSnakeCoordinates = [];
-    const canvasSize = getCanvasSize() as number;
+    const { cellSize } = this.props;
+    const canvasSize = this.getCanvasSize() as number;
     const headCoordinates = snakeCoordinates[0] as ICell;
     const newHeadCoordinates = getComputedNextHeadCoordinates(headCoordinates, direction, canvasSize, cellSize);
 
     if (newHeadCoordinates) {
 
       if (isSameCoordinates(newHeadCoordinates, foodCoordinates)) {
-        setSnakeSize(snakeSize + 1);
-        setScore(score+1)
+        snakeSize++;
+        score++;
         newSnakeCoordinates = [ newHeadCoordinates, ...snakeCoordinates ];
-        setFood();
+        this.setFood();
       } else {
         newSnakeCoordinates = [ newHeadCoordinates, ...snakeCoordinates.slice(0, -1) ]
       }
 
-       setSnakeCoordinates(newSnakeCoordinates)
-       setSnakeSize(snakeSize)
-       setScore(score)
-      
-      
+      this.setState({
+        snakeCoordinates: newSnakeCoordinates,
+        direction,
+        snakeSize,
+        score,
+      }, () => this.renderSnake());
     }
   };
 
@@ -299,8 +306,8 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Changes direction if event keyCode matches with arrows keyCodes.
    */
 
-  const handleKeyDown = (e: any): void => {
-    
+  public handleKeyDown = (e: any): void => {
+    const { direction } = this.state;
     let newDirection = null;
 
     switch (e.keyCode) {
@@ -321,7 +328,9 @@ const Snake = ({cellSize}: ISnakeProps) => {
     }
 
     if (newDirection) {
-      setDirection(newDirection)
+      this.setState({
+        direction: newDirection,
+      });
     }
   };
 
@@ -330,14 +339,18 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Sets food random coordinate. Checks collision with snake.
    */
 
-  const setFood = (): void => {
+  public setFood(): void {
+    const { cellSize } = this.props;
+    const { snakeCoordinates } = this.state;
     const [ x, y ] = [ getRandomCoordinate(cellSize), getRandomCoordinate(cellSize) ];
 
     if (snakeCoordinates.some(part => isSameCoordinates({ x, y }, part))) {
-      setFood();
+      this.setFood();
 
     } else {
-      setFoodCoordinates({ x, y })
+      this.setState({
+        foodCoordinates: { x, y }
+      });
     }
   }
 
@@ -346,12 +359,13 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Gets food coordinate from state. Renders food.
    */
 
-  const renderFood = () => {
+  public renderFood() {
+    const foodCoordinates = this.state.foodCoordinates;
 
     if (foodCoordinates) {
       const { x, y } = foodCoordinates;
 
-      renderSquare(x, y, WHITE_COLOR);
+      this.renderSquare(x, y, WHITE_COLOR);
     }
   }
 
@@ -360,16 +374,17 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Main game loop. Checks collision when snake's head hits the body.
    */
 
-  const loop = (): void => {
-    timerId = setTimeout(() => {
+  public loop = (): void => {
+    this.timerId = setTimeout(() => {
+      const { snakeCoordinates } = this.state;
 
       if (snakeCoordinates.slice(1).some(item => isSameCoordinates(item, snakeCoordinates[0]))) {
-        clearTimeout(timerId);
-        startGame();
+        clearTimeout(this.timerId);
+        this.startGame();
 
       } else {
-        moveSnake();
-        window.requestAnimationFrame(loop);
+        this.moveSnake();
+        window.requestAnimationFrame(this.loop);
       }
     }, 100);
   };
@@ -379,23 +394,25 @@ const Snake = ({cellSize}: ISnakeProps) => {
    * @description Starts game, renders grid, snake and food.
    */
 
-  const startGame = (): void => {
-    renderGrid();
-    setInitialSnake();
-    setFood();
-    loop();
+  public startGame(): void {
+    this.renderGrid();
+    this.setInitialSnake();
+    this.setFood();
+    this.loop();
   }
 
+  public render() {
+    const { score } = this.state;
 
     return (
-      <div className="wrapper">
-        <canvas onKeyDown={handleKeyDown} className="canvas" ref={canvas} tabIndex={0} />
-        <div className="scoreboard">
-          <span>Score: {score}</span>
+        <div className="wrapper">
+          <canvas onKeyDown={this.handleKeyDown} className="canvas" ref={this.canvas} tabIndex={0} />
+          <div className="scoreboard">
+            <span>Score: {score}</span>
+          </div>
         </div>
-      </div>
     );
-  
+  }
 }
 
 export default Snake;
